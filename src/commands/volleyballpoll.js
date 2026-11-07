@@ -1,8 +1,12 @@
 const { SlashCommandBuilder, PollLayoutType } = require('discord.js');
 const config = require('../config');
-const { nextThursday, formatShortDate, insertPollCycle, getCurrentOpenCycle } = require('../services/pollCycle');
-
-const POLL_DURATION_HOURS = 7 * 24; // open for a week
+const {
+  nextThursday,
+  formatShortDate,
+  hoursUntilEventMidnight,
+  insertPollCycle,
+  getCurrentOpenCycle,
+} = require('../services/pollCycle');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -23,7 +27,7 @@ module.exports = {
       await interaction.reply({
         content: `There's already an open poll for this cycle (posted <t:${Math.floor(
           new Date(existing.created_at).getTime() / 1000
-        )}:R>). Use /generatelist to close it out, or ask an admin to resolve it before starting a new one.`,
+        )}:R>). Use /generatelist to close it out, or /cancelpoll to discard it, before starting a new one.`,
         ephemeral: true,
       });
       return;
@@ -31,6 +35,7 @@ module.exports = {
 
     const eventDate = nextThursday();
     const question = `Volleyball ${formatShortDate(eventDate)}`;
+    const durationHours = hoursUntilEventMidnight(eventDate);
 
     await interaction.deferReply();
 
@@ -38,7 +43,7 @@ module.exports = {
       poll: {
         question: { text: question },
         answers: [{ text: 'Yes' }, { text: 'Yes, but watching' }],
-        duration: POLL_DURATION_HOURS,
+        duration: durationHours,
         allowMultiselect: false,
         layoutType: PollLayoutType.Default,
       },
@@ -52,10 +57,11 @@ module.exports = {
       eventDate: eventDate.toISOString(),
     });
 
+    const closesAt = Math.floor(eventDate.getTime() / 1000);
     await interaction.editReply(
       `Poll posted for **${question}**! Vote in the poll above, and type things like ` +
         `\`+alex +chris\` in this channel to bring up to 2 guests each. Type \`-name\` or delete your ` +
-        `message to cancel a guest.`
+        `message to cancel a guest. Poll closes <t:${closesAt}:F>.`
     );
   },
 };

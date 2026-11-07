@@ -8,22 +8,56 @@ that limit to admins for approval, and posts a prioritized roster (capped at
 ## How it works
 
 - **`/volleyballpoll`** — posts a native Discord poll titled `Volleyball
-  <M/D>` (next upcoming Thursday) with answers `Yes` / `Yes, but watching`.
-  Opens a new poll cycle; only one can be open at a time.
+  <M/D>` for the next upcoming Thursday (if run on a Thursday itself, it
+  targets *next* week's Thursday instead, since game day has nothing left to
+  close at) with answers `Yes` / `Yes, but watching`. The poll's duration is
+  set so it automatically closes at that Thursday's midnight — no manual
+  action needed. **Only one poll can be open at a time**: running the
+  command again while one is open is blocked with a reply telling you to use
+  `/generatelist` (finalize) or `/cancelpoll` (discard) first.
+- **`/cancelpoll`** (admin-only) — discards the current open poll (ends the
+  native Discord poll, marks the cycle cancelled) without posting a roster,
+  so `/volleyballpoll` can start fresh. Its votes/guest data are kept in the
+  database but excluded from `/generatelist`'s fallback lookup — they're
+  never reported on, as if the poll never happened.
 - **Chat parsing** (in the configured channel only, while a poll is open):
   - `+alex +chris`, `+Brad & Justin`, `+1 abigail bro`, `+aaron n +jack`,
     etc. — adds guests. First 2 active (approved/pending) guests per member
-    are auto-approved (✅ reaction). Anything past 2 is posted as a pending
+    are auto-approved (✅ reaction + a reply confirming who was added and
+    how many spots are used). Anything past 2 is posted as a pending
     approval request with Approve/Reject buttons, pinging the admin role.
-  - `-chris` — cancels a guest you added (➖ reaction). Deleting your
-    message cancels every guest it added too.
-- **`/generatelist`** (or automatically every Wednesday) — posts the roster:
-  members who voted Yes (in vote order), then approved guests (in request
-  order), capped at `ROSTER_CAP` (default 30), with the rest listed as a
-  waitlist. This also closes the poll cycle.
+  - `-chris` — cancels a guest you added (➖ reaction + confirmation reply).
+    Deleting your message cancels every guest it added too.
+- **`/generatelist`** (or automatically every Wednesday) — posts the roster
+  for whichever poll cycle is relevant (see below), then ends that poll and
+  closes the cycle: members who voted Yes (in vote order), then approved
+  guests (in request order), capped at `ROSTER_CAP` (default 30), with the
+  rest listed as a waitlist.
 
-All state (poll cycle, votes, guest invites, pending requests) lives in a
-local SQLite file (`data.sqlite`), so the bot survives restarts.
+### Which poll does `/generatelist` report on?
+
+The bot doesn't re-scan the channel's message history at list-generation
+time. Every `+name`/`-name` message is tagged, as it arrives, with whichever
+poll cycle is currently open in the database — that tagging is what
+`/generatelist` reads from, not a live search of Discord messages. So:
+
+- While a poll is open, `/generatelist` reports on *that* cycle.
+- If no poll is currently open (it was already closed by a previous
+  `/generatelist` run or the Wednesday cron), it falls back to the most
+  recently created cycle that wasn't cancelled — i.e. "the last poll that
+  actually ran" — so you can re-post or review the latest roster on demand.
+- A poll cancelled with `/cancelpoll` is never picked up by that fallback.
+
+The practical implication: if the bot is offline when someone posts
+`+name`, that message is **not** retroactively picked up when it comes back
+online — it only reacts to messages sent while it's connected. If you're
+self-hosting on a machine that isn't always on, that's the main risk to be
+aware of (see hosting section below). Ask if you'd like a startup backfill
+added to cover this.
+
+All state (poll cycles, votes, guest invites, pending requests) lives in a
+local SQLite file (`data.sqlite`), so the bot survives restarts — it just
+can't recover messages it missed while it was down.
 
 ## 1. Create the Discord application
 

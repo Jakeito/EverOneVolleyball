@@ -2,6 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const config = require('../config');
 const { getCurrentOpenCycle, getMostRecentCycle, closeCycle } = require('../services/pollCycle');
 const { buildRoster, formatRosterMessage } = require('../services/rosterBuilder');
+const { endPollMessage } = require('../services/discordPoll');
 
 async function postRoster(channel, guildId) {
   const cycle = getCurrentOpenCycle(guildId) || getMostRecentCycle(guildId);
@@ -13,7 +14,10 @@ async function postRoster(channel, guildId) {
   const header = `**${cycle.question} — RSVP List**`;
   await channel.send(`${header}\n${formatRosterMessage(roster)}`);
 
-  if (cycle.status === 'open') closeCycle(cycle.id);
+  if (cycle.status === 'open') {
+    await endPollMessage(channel, cycle.message_id);
+    closeCycle(cycle.id);
+  }
 
   return { posted: true };
 }
