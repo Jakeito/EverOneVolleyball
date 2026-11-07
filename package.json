@@ -1,0 +1,29 @@
+{
+  "name": "everonevolleyball",
+  "version": "1.0.0",
+  "description": "Discord bot that runs the EverOne volleyball poll, +1 guest requests, and the Wednesday RSVP roster.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy-commands": "node src/deploy-commands.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jakeito/EverOneVolleyball.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Jakeito/EverOneVolleyball/issues"
+  },
+  "homepage": "https://github.com/Jakeito/EverOneVolleyball#readme",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "discord.js": "^14.28.1",
+    "dotenv": "^18.0.9",
+    "node-cron": "^4.6.0"
+  }
+}
