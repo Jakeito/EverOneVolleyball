@@ -7,7 +7,7 @@ const { endPollMessage } = require('../services/discordPoll');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('cancelpoll')
-    .setDescription('Cancels the current open volleyball poll without posting a roster, so a new one can start.'),
+    .setDescription('Cancels the current open poll (any sport) without posting a roster, so a new one can start.'),
 
   async execute(interaction) {
     if (interaction.channelId !== config.channelId) {
@@ -38,7 +38,7 @@ module.exports = {
 
     await interaction.editReply(
       `Cancelled **${cycle.question}**. Any votes and guest requests recorded for it are discarded. ` +
-        `Run /volleyballpoll to start a fresh one.`
+        `Run the sport's poll command again to start a fresh one.`
     );
   },
 };

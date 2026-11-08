@@ -13,7 +13,9 @@ CREATE TABLE IF NOT EXISTS poll_cycles (
   question TEXT NOT NULL,
   event_date TEXT NOT NULL,
   created_at TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'open'
+  status TEXT NOT NULL DEFAULT 'open',
+  sport TEXT NOT NULL DEFAULT 'volleyball',
+  roster_cap INTEGER NOT NULL DEFAULT 30
 );
 
 CREATE TABLE IF NOT EXISTS poll_votes (
@@ -60,5 +62,15 @@ CREATE TABLE IF NOT EXISTS guest_invites (
 CREATE INDEX IF NOT EXISTS idx_guest_invites_cycle ON guest_invites(poll_cycle_id);
 CREATE INDEX IF NOT EXISTS idx_poll_votes_cycle ON poll_votes(poll_cycle_id);
 `);
+
+// Migrate poll_cycles for installs created before multi-sport support:
+// CREATE TABLE IF NOT EXISTS doesn't add columns to an already-existing table.
+const pollCycleColumns = db.prepare('PRAGMA table_info(poll_cycles)').all().map((c) => c.name);
+if (!pollCycleColumns.includes('sport')) {
+  db.exec("ALTER TABLE poll_cycles ADD COLUMN sport TEXT NOT NULL DEFAULT 'volleyball'");
+}
+if (!pollCycleColumns.includes('roster_cap')) {
+  db.exec('ALTER TABLE poll_cycles ADD COLUMN roster_cap INTEGER NOT NULL DEFAULT 30');
+}
 
 module.exports = db;

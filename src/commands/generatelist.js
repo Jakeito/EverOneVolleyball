@@ -7,10 +7,14 @@ const { endPollMessage } = require('../services/discordPoll');
 async function postRoster(channel, guildId) {
   const cycle = getCurrentOpenCycle(guildId) || getMostRecentCycle(guildId);
   if (!cycle) {
-    return { posted: false, reason: 'No volleyball poll has been started yet. Run /volleyballpoll first.' };
+    return {
+      posted: false,
+      reason:
+        'No poll has been started yet. Run /volleyballpoll, /basketballpoll, /pickleballpoll, or /soccerpoll first.',
+    };
   }
 
-  const roster = buildRoster(cycle.id);
+  const roster = buildRoster(cycle.id, cycle.roster_cap);
   const header = `**${cycle.question} — RSVP List**`;
   await channel.send(`${header}\n${formatRosterMessage(roster)}`);
 
@@ -25,7 +29,7 @@ async function postRoster(channel, guildId) {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('generatelist')
-    .setDescription('Generates and posts the prioritized RSVP list for the current volleyball poll.'),
+    .setDescription('Generates and posts the prioritized RSVP list for the current poll (any sport).'),
 
   async execute(interaction) {
     if (interaction.channelId !== config.channelId) {

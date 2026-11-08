@@ -27,12 +27,22 @@ function hoursUntilEventMidnight(eventDate, from = new Date()) {
   return Math.min(MAX_POLL_DURATION_HOURS, Math.max(MIN_POLL_DURATION_HOURS, rawHours));
 }
 
-function insertPollCycle({ guildId, channelId, messageId, question, eventDate }) {
+function insertPollCycle({ guildId, channelId, messageId, question, eventDate, sport, rosterCap }) {
   const stmt = db.prepare(`
-    INSERT INTO poll_cycles (guild_id, channel_id, message_id, question, event_date, created_at, status)
-    VALUES (?, ?, ?, ?, ?, ?, 'open')
+    INSERT INTO poll_cycles
+      (guild_id, channel_id, message_id, question, event_date, created_at, status, sport, roster_cap)
+    VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?)
   `);
-  const info = stmt.run(guildId, channelId, messageId, question, eventDate, new Date().toISOString());
+  const info = stmt.run(
+    guildId,
+    channelId,
+    messageId,
+    question,
+    eventDate,
+    new Date().toISOString(),
+    sport,
+    rosterCap
+  );
   return getPollCycleById(info.lastInsertRowid);
 }
 

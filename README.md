@@ -1,25 +1,33 @@
-# EverOne Volleyball Bot
+# EverOne Sports Bot
 
-Discord bot for the church volleyball group. Posts a bi-weekly Thursday RSVP
-poll, lets members `+name` up to 2 guests each in chat, routes anything over
-that limit to admins for approval, and posts a prioritized roster (capped at
-30, then waitlist) every Wednesday or on demand.
+Discord bot for the church sports groups (volleyball, basketball,
+pickleball/badminton, soccer). Posts a Thursday RSVP poll, lets members
+`+name` up to 2 guests each in chat, routes anything over that limit to
+admins for approval, and posts a prioritized roster (capped at 30 by
+default, then waitlist) every Wednesday or on demand.
 
 ## How it works
 
-- **`/volleyballpoll`** — posts a native Discord poll titled `Volleyball
-  <M/D>` for the next upcoming Thursday (if run on a Thursday itself, it
-  targets *next* week's Thursday instead, since game day has nothing left to
-  close at) with answers `Yes` / `Yes, but watching`. The poll's duration is
-  set so it automatically closes at that Thursday's midnight — no manual
-  action needed. **Only one poll can be open at a time**: running the
-  command again while one is open is blocked with a reply telling you to use
-  `/generatelist` (finalize) or `/cancelpoll` (discard) first.
-- **`/cancelpoll`** (admin-only) — discards the current open poll (ends the
-  native Discord poll, marks the cycle cancelled) without posting a roster,
-  so `/volleyballpoll` can start fresh. Its votes/guest data are kept in the
-  database but excluded from `/generatelist`'s fallback lookup — they're
-  never reported on, as if the poll never happened.
+- **`/volleyballpoll`**, **`/basketballpoll`**, **`/pickleballpoll`**
+  (covers both pickleball and badminton), **`/soccerpoll`** — each posts a
+  native Discord poll titled e.g. `Basketball <M/D>` for the next upcoming
+  Thursday (if run on a Thursday itself, it targets *next* week's Thursday
+  instead, since game day has nothing left to close at) with answers `Yes` /
+  `Yes, but watching`. The poll's duration is set so it automatically closes
+  at that Thursday's midnight — no manual action needed. Every one of these
+  commands takes an optional **`cap`** integer argument (e.g.
+  `/basketballpoll cap:10`) to override the default roster cap of
+  `ROSTER_CAP` (30) for that specific poll — useful for sports with a
+  smaller max headcount than volleyball. **Only one poll can be open at a
+  time, across all sports** (they share the one channel): running any of
+  these commands while another is open is blocked with a reply telling you
+  to use `/generatelist` (finalize) or `/cancelpoll` (discard) first.
+- **`/cancelpoll`** (admin-only) — works the same for any sport. Discards
+  the current open poll (ends the native Discord poll, marks the cycle
+  cancelled) without posting a roster, so a new poll command can start
+  fresh. Its votes/guest data are kept in the database but excluded from
+  `/generatelist`'s fallback lookup — they're never reported on, as if the
+  poll never happened.
 - **Chat parsing** (in the configured channel only, while a poll is open):
   - `+alex +chris`, `+Brad & Justin`, `+1 abigail bro`, `+aaron n +jack`,
     etc. — adds guests. First 2 active (approved/pending) guests per member
@@ -28,11 +36,13 @@ that limit to admins for approval, and posts a prioritized roster (capped at
     approval request with Approve/Reject buttons, pinging the admin role.
   - `-chris` — cancels a guest you added (➖ reaction + confirmation reply).
     Deleting your message cancels every guest it added too.
-- **`/generatelist`** (or automatically every Wednesday) — posts the roster
-  for whichever poll cycle is relevant (see below), then ends that poll and
-  closes the cycle: members who voted Yes (in vote order), then approved
-  guests (in request order), capped at `ROSTER_CAP` (default 30), with the
-  rest listed as a waitlist.
+- **`/generatelist`** (or automatically every Wednesday) — works the same
+  regardless of which sport is active. Posts the roster for whichever poll
+  cycle is relevant (see below), then ends that poll and closes the cycle:
+  members who voted Yes (in vote order), then approved guests (in request
+  order), capped at that poll's own `cap` (the value set when it was
+  created, or `ROSTER_CAP` if none was given), with the rest listed as a
+  waitlist.
 
 ### Which poll does `/generatelist` report on?
 
@@ -73,9 +83,10 @@ can't recover messages it missed while it was down.
      `Use Slash Commands`, `Embed Links`, `Manage Messages` (optional, only if
      you want the bot itself able to resolve requests), `View Channels`
    - Open the generated URL and invite the bot to your server.
-6. Get your **Guild ID** (server) and the **Channel ID** for the volleyball
-   channel: enable Developer Mode in Discord (User Settings → Advanced),
-   then right-click the server/channel → **Copy ID**.
+6. Get your **Guild ID** (server) and the **Channel ID** for the shared
+   sports channel (all four sport polls run in this one channel): enable
+   Developer Mode in Discord (User Settings → Advanced), then right-click
+   the server/channel → **Copy ID**.
 7. (Optional) If you want a specific role — rather than just "Manage
    Messages" permission — to approve/reject guest requests, copy that role's
    ID for `ADMIN_ROLE_ID`.
@@ -103,7 +114,7 @@ TIMEZONE=America/Los_Angeles
 
 ```bash
 npm install
-npm run deploy-commands   # registers /volleyballpoll and /generatelist
+npm run deploy-commands   # registers all poll commands, /generatelist, /cancelpoll
 npm start
 ```
 
@@ -195,8 +206,11 @@ sudo systemctl restart volleyball-bot
   `+1 abigail bro`) but very free-form phrasing may not parse as expected.
   If a message doesn't get a ✅/➖/⏳ reaction, the bot didn't detect a
   guest token in it.
-- Only one poll cycle is open at a time; `/generatelist` closes the current
-  cycle when it posts the roster (manually or via the Wednesday cron), so
-  `/volleyballpoll` is ready to start the next one.
+- Only one poll cycle is open at a time, shared across all four sports;
+  `/generatelist` closes the current cycle when it posts the roster
+  (manually or via the Wednesday cron), so the next poll command is ready to
+  start a new cycle.
 - "Yes, but watching" voters are listed separately at the bottom of the
-  roster and don't count toward the 30-player cap.
+  roster and don't count toward the roster cap.
+- The `cap` argument only applies to the poll it's given on; it doesn't
+  change the `ROSTER_CAP` default for future polls.
